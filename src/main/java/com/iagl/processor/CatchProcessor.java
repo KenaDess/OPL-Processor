@@ -12,5 +12,4 @@ public class CatchProcessor extends AbstractProcessor<CtCatch> {
       getFactory().getEnvironment().report(this, Level.WARN, element, "empty catch clause");
     }
   }
-
 }
