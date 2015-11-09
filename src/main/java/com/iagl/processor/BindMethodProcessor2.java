@@ -5,6 +5,7 @@ import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.List;
 
+import spoon.processing.AbstractManualProcessor;
 import spoon.processing.AbstractProcessor;
 import spoon.reflect.code.CtBlock;
 import spoon.reflect.code.CtInvocation;
@@ -18,16 +19,22 @@ import spoon.reflect.visitor.filter.TypeFilter;
 import spoon.support.reflect.code.CtFieldReadImpl;
 import util.SaveMap;
 
-public class BindMethodProcessor extends AbstractProcessor<CtMethod>{
+public class BindMethodProcessor2 extends AbstractManualProcessor{
 
 	@Override
-	public void process(CtMethod method) {	
-		
+	public void process() {	
 		HashMap<String, String> saveBind = new HashMap<String, String>();
 		
-		//createInjector(method);
-		HashMap<String, String> saveBind2 = doGenerateBindMap(method, saveBind);		
-		getInstance(method, saveBind2);
+		// create BindMap
+		List<CtMethod> methods = getFactory().Package().getRootPackage().getElements(new TypeFilter(CtMethod.class));
+		for (CtMethod method : methods){
+			doGenerateBindMap(method, saveBind);	
+		}		
+			
+		//Get 
+		for (CtMethod method : methods){
+			getInstance(method, saveBind);
+		}
 	}	
 	
 	private void getInstance(CtMethod<?> method, HashMap<String, String> saveBind){
@@ -82,7 +89,7 @@ public class BindMethodProcessor extends AbstractProcessor<CtMethod>{
 							CtField<?> field = factory.Core().createField();
 							field.setSimpleName("exemple");
 							field.setType(typeReference);
-							field.setParent(statement);							
+							field.setParent(statement);					
 							
 						}
 					}
