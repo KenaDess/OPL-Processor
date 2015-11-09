@@ -1,20 +1,28 @@
 package util;
 
 import java.util.HashMap;
-import java.util.Map;
 
 public class SaveMap {
-	private static Map<String, String> bindsMap = new HashMap<String, String>();
+	private HashMap<String, String> bindsMap;
 	
-	public static void saveBinds(String className, String value){
+	
+	public SaveMap() {
+		this.bindsMap = new HashMap<String, String>();
+	}
+	
+	public HashMap<String, String> getMap(){
+		return this.bindsMap;
+	}
+	
+	public void saveBinds(String className, String value){
 		bindsMap.put(className, value);
 	}
 	
-	public static boolean containsClass(String className){
+	public boolean containsClass(String className){
 		return bindsMap.containsKey(className);
 	}
 	
-	public static String getClassValue(String className){
+	public String getClassValue(String className){
 		return bindsMap.get(className);
 	}	
 }
