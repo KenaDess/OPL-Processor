@@ -18,8 +18,8 @@ public class ConstructorProcessor extends AbstractManualProcessor {
 
     PrintWriter writer;
     try {
-      writer = new PrintWriter("C:/Users/Pauline/Desktop/ctor-process.txt");
-      //writer = new PrintWriter("C:/Users/AnaGissel/Desktop/ctor.txt");
+      //writer = new PrintWriter("C:/Users/Pauline/Desktop/ctor-process.txt");
+      writer = new PrintWriter("C:/Users/AnaGissel/Desktop/ctor.txt");
 
       // On recupere la liste des contructeurs
       List<CtConstructor> constructors = getFactory().Package().getRootPackage().getElements(new TypeFilter(CtConstructor.class));
@@ -52,8 +52,8 @@ public class ConstructorProcessor extends AbstractManualProcessor {
   private void remplaceConstructor(CtConstructor<? extends Object> constructor) {
     PrintWriter writer;
     try {
-    	//writer = new PrintWriter("C:/Users/AnaGissel/Desktop/bindmap-list.txt");
-      writer = new PrintWriter("C:/Users/Pauline/Desktop/bindmap-list.txt");
+    	writer = new PrintWriter("C:/Users/AnaGissel/Desktop/bindmap-list.txt");
+      //writer = new PrintWriter("C:/Users/Pauline/Desktop/bindmap-list.txt");
       
       // Pour visualiser
       writer.println("Constructor.getType.getQualifiedName : "+constructor.getType().getQualifiedName());

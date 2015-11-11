@@ -1,14 +1,9 @@
 package com.iagl.processor;
 
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import spoon.processing.AbstractManualProcessor;
-import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtConstructor;
 import spoon.reflect.declaration.CtParameter;
 import spoon.reflect.visitor.filter.TypeFilter;
@@ -38,7 +33,6 @@ public class ConstructorParametersProcessor extends AbstractManualProcessor{
 		for(CtParameter<?> parameter : constructor.getParameters()){
 			parameters.add(parameter.getType().toString());
 		}	
-		SaveMap.saveConstructorParameters(constructor.getType().toString(), parameters);
-		
+		SaveMap.saveConstructorParameters(constructor.getType().toString(), parameters);		
 	}
 }

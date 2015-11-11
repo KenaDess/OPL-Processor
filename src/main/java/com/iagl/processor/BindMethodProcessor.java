@@ -1,33 +1,18 @@
 package com.iagl.processor;
 
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import spoon.processing.AbstractManualProcessor;
-import spoon.processing.AbstractProcessor;
 import spoon.reflect.code.CtBlock;
 import spoon.reflect.code.CtCodeSnippetExpression;
 import spoon.reflect.code.CtCodeSnippetStatement;
-import spoon.reflect.code.CtExpression;
 import spoon.reflect.code.CtInvocation;
 import spoon.reflect.code.CtLocalVariable;
 import spoon.reflect.code.CtStatement;
 import spoon.reflect.code.CtVariableAccess;
-import spoon.reflect.declaration.CtClass;
-import spoon.reflect.declaration.CtConstructor;
-import spoon.reflect.declaration.CtElement;
-import spoon.reflect.declaration.CtField;
 import spoon.reflect.declaration.CtMethod;
-import spoon.reflect.declaration.CtParameter;
-import spoon.reflect.declaration.CtVariable;
-import spoon.reflect.factory.Factory;
-import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.visitor.filter.TypeFilter;
-import spoon.support.reflect.code.CtFieldReadImpl;
 import util.SaveMap;
 
 public class BindMethodProcessor extends AbstractManualProcessor{
@@ -46,12 +31,12 @@ public class BindMethodProcessor extends AbstractManualProcessor{
 		
 		// Phase 2: Replace all getInstance invocations
 		for (CtMethod method : methods){
-			getInstance(method);
+			replaceGetInstanceInvocations(method);
 		}
 		
 		// Phase 3: Delete the createInjector object
 		for (CtMethod method : methods){
-			createInjector(method);
+			commentCreateInjectorStatement(method);
 		}
 	}	
 	
@@ -59,8 +44,7 @@ public class BindMethodProcessor extends AbstractManualProcessor{
 	 * Replace all getInstance invocations
 	 * @param method
 	 */
-	private void getInstance(CtMethod<?> method){
-				
+	private void replaceGetInstanceInvocations(CtMethod<?> method){				
 		CtBlock body = method.getBody();
 		String methodName = method.getSimpleName();
 		if(methodName.equals("main")){	
@@ -101,45 +85,37 @@ public class BindMethodProcessor extends AbstractManualProcessor{
 	}
 	
 	/**
-	 * Delete the createInjector object
+	 * Comments the createInjector object Statement
 	 * @param method
 	 */
-	private void createInjector(CtMethod<?> method){
+	private void commentCreateInjectorStatement(CtMethod<?> method){
 		String methodName = method.getSimpleName();
 		
 		if(methodName.equals("main")){	
-			List<CtStatement> statements = method.getBody().getStatements();
+			int statementIndex =0;
+			boolean isInjector =false;
+			CtBlock body = method.getBody();
+			CtCodeSnippetStatement statementToDelete = getFactory().Core().createCodeSnippetStatement();			
 			
-			/*PrintWriter writer;					
-			try {
-				writer = new PrintWriter("C:/Users/AnaGissel/Desktop/the-file-name2.txt");*/
-				for(CtStatement statement:statements){	
-					
-					Class<CtLocalVariable> filterClass = CtLocalVariable.class;
-					TypeFilter<CtLocalVariable> statementFilter = new TypeFilter<CtLocalVariable>(filterClass);
-					List<CtLocalVariable> variables = statement.getElements(statementFilter);
-					
-					for(CtLocalVariable variable: variables){		
-						if( variable.getType().getQualifiedName().equals("com.google.inject.Injector"))
-						{		
-							//variable.setSimpleName("gissel");
-							
-							CtCodeSnippetStatement snippet = getFactory().Core().createCodeSnippetStatement();
-							snippet.setValue("//"+statement.toString());
-							snippet.setParent(variable);
-							//snippet.insertAfter(variable);
-							//REPLACE
-							//statement.replace(snippet);
-							//writer.println("snippet: "+snippet.toString());
-						}
+			for(CtStatement statement:body.getStatements()){	
+				statementIndex++;				
+				Class<CtLocalVariable> filterClass = CtLocalVariable.class;
+				TypeFilter<CtLocalVariable> statementFilter = new TypeFilter<CtLocalVariable>(filterClass);
+				List<CtLocalVariable> variables = statement.getElements(statementFilter);
+				
+				for(CtLocalVariable variable: variables){		
+					if( variable.getType().getQualifiedName().equals("com.google.inject.Injector"))
+					{		
+						isInjector=true;							
+						statementToDelete.setValue("//"+statement.toString());
+						break;
 					}
 				}
-				
-			/*	writer.close();
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}		*/
+				if(isInjector)
+					break;
+			}			
+			CtStatement statement = body.getStatement(statementIndex-1);
+			statement.replace(statementToDelete);	
 		}
 	}
 	
@@ -187,7 +163,7 @@ public class BindMethodProcessor extends AbstractManualProcessor{
 	  }
 	
 	/**
-	 * Generate the SnippetExpressionValue
+	 * Generate the SnippetExpressionValue for the className
 	 * @param className
 	 * @return
 	 */
