@@ -1,5 +1,6 @@
 package util;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -61,4 +62,17 @@ public class SaveMap {
 	public static List<String> getConstructorParameters(String constructorName){
 		return constructorParamenters.get(constructorName);
 	}	
+
+  /**
+   * Returns the list of all the keys in the bindsMap
+   * @return 
+   */
+  public static List<String> getAllKeys() {
+    List<String> keys = new ArrayList<String>();
+    for (String key : bindsMap.keySet()) {
+      keys.add(key);
+    }
+    return keys;
+  }
+
 }
