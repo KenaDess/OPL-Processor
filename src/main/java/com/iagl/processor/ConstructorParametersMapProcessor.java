@@ -9,7 +9,7 @@ import spoon.reflect.declaration.CtParameter;
 import spoon.reflect.visitor.filter.TypeFilter;
 import util.SaveMap;
 
-public class ConstructorParametersProcessor extends AbstractManualProcessor{
+public class ConstructorParametersMapProcessor extends AbstractManualProcessor{
 
 	@Override
 	public void process() {			
