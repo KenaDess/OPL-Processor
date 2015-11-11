@@ -28,7 +28,7 @@ public class ConstructorParametersProcessor extends AbstractManualProcessor{
 	}
 	
 	/**
-	 * Generate the maping of 
+	 * Generate the maping of all constructor parameters
 	 * @param constructor
 	 */
 	private void generateMapConstructorParameters(CtConstructor<? extends Object> constructor){
@@ -36,8 +36,9 @@ public class ConstructorParametersProcessor extends AbstractManualProcessor{
 		List<String> parameters = new ArrayList<String>();
 		
 		for(CtParameter<?> parameter : constructor.getParameters()){
-			parameters.add(parameter.getType().getSimpleName());
+			parameters.add(parameter.getType().toString());
 		}	
-		SaveMap.saveConstructorParameters(constructor.getType().getSimpleName(), parameters);		
+		SaveMap.saveConstructorParameters(constructor.getType().toString(), parameters);
+		
 	}
 }

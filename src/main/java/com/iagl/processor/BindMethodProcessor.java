@@ -30,7 +30,7 @@ import spoon.reflect.visitor.filter.TypeFilter;
 import spoon.support.reflect.code.CtFieldReadImpl;
 import util.SaveMap;
 
-public class BindMethodProcessor2 extends AbstractManualProcessor{
+public class BindMethodProcessor extends AbstractManualProcessor{
 
 	public static final String ANNOTATION_OVERRIDE = "@java.lang.Override";
 	
@@ -43,17 +43,17 @@ public class BindMethodProcessor2 extends AbstractManualProcessor{
 		try {
 			writer = new PrintWriter("C:/Users/AnaGissel/Desktop/the-file-name.txt");
 			
-		// create BindMap
+		// Phase 1: create BindMap
 		for (CtMethod method : methods){
 			doGenerateBindMap(method);	
 		}		
 		
-		//Get 
+		// Phase 2: Replace all getInstance invocations
 		for (CtMethod method : methods){
 			getInstance(method);
 		}
 		
-		//create injector
+		// Phase 3: Delete the createInjector object
 		for (CtMethod method : methods){
 			createInjector(method);
 		}
