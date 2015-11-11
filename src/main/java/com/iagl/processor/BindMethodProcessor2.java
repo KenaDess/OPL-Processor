@@ -10,6 +10,7 @@ import java.util.Map;
 import spoon.processing.AbstractManualProcessor;
 import spoon.processing.AbstractProcessor;
 import spoon.reflect.code.CtBlock;
+import spoon.reflect.code.CtCodeSnippetExpression;
 import spoon.reflect.code.CtCodeSnippetStatement;
 import spoon.reflect.code.CtExpression;
 import spoon.reflect.code.CtInvocation;
@@ -64,7 +65,7 @@ public class BindMethodProcessor2 extends AbstractManualProcessor{
 	}	
 	
 	/**
-	 * Relace all getInstance invocations
+	 * Replace all getInstance invocations
 	 * @param method
 	 */
 	private void getInstance(CtMethod<?> method){
@@ -73,57 +74,37 @@ public class BindMethodProcessor2 extends AbstractManualProcessor{
 		String methodName = method.getSimpleName();
 		if(methodName.equals("main")){	
 			List<CtStatement> statements = body.getStatements();
+										
+			//statement instanceof CtInvocqtio inv.getExecutabe.getSignature().equals
 			
-			PrintWriter writer;					
-			try {
-				writer = new PrintWriter("C:/Users/AnaGissel/Desktop/the-file-name3.txt");
-							
-				//statement instanceof CtInvocqtio inv.getExecutabe.getSignature().equals
+			//Get all statements from the body
+			for(CtStatement statement:statements){	
+				Class<CtLocalVariable> filterClass = CtLocalVariable.class;
+				TypeFilter<CtLocalVariable> statementFilter = new TypeFilter<CtLocalVariable>(filterClass);
+				List<CtLocalVariable> variables = statement.getElements(statementFilter);
 				
-				//Get all statements from the body
-				for(CtStatement statement:statements){	
-					Class<CtLocalVariable> filterClass = CtLocalVariable.class;
-					TypeFilter<CtLocalVariable> statementFilter = new TypeFilter<CtLocalVariable>(filterClass);
-					List<CtLocalVariable> variables = statement.getElements(statementFilter);
+				for(CtLocalVariable variable: variables){	
 					
-					for(CtLocalVariable variable: variables){	
-						
-						Class<CtInvocation> filterClass2 = CtInvocation.class;
-						TypeFilter<CtInvocation> statementFilter2 = new TypeFilter<CtInvocation>(filterClass2);
-						List<CtInvocation> expressions = variable.getDefaultExpression().getElements(statementFilter2);
-												
-						for(CtInvocation invocation: expressions){
-							//writer.println("inv: "+invocation.toString());
-							if(invocation.getExecutable().toString().equals("com.google.inject.Injector#getInstance(java.lang.Class)")){
-								writer.println("ex: "+variable.getDefaultExpression().getSignature());
-								writer.println("inv sig: "+invocation.getSignature());
-								writer.println("inv ex type: "+invocation.getExecutable().getType().getSimpleName());
-								
-								writer.println("BIND: "+SaveMap.getClassValue(invocation.getExecutable().getType().getSimpleName()));
-								for(String s :SaveMap.getConstructorParameters(SaveMap.getClassValue(invocation.getExecutable().getType().getSimpleName())))
-									writer.println("PARAM: "+s);
-								
-								
-								//variable.setDefaultExpression("");								
-								
-								//Replace invocation
-								/*CtTypeReference typeReference = elements.get(0).getType();
-								Factory factory = getFactory();
-
-								//LocalVariable = get/set default expression
-								factory.getEnvironment().setAutoImports(true);
-								CtField<?> field = factory.Core().createField();
-								field.setSimpleName("exemple");
-								field.setType(typeReference);
-								field.setParent(statement);		*/
-							}
-						}		
-					}
+					Class<CtInvocation> filterClass2 = CtInvocation.class;
+					TypeFilter<CtInvocation> statementFilter2 = new TypeFilter<CtInvocation>(filterClass2);
+					List<CtInvocation> expressions = variable.getDefaultExpression().getElements(statementFilter2);
+											
+					for(CtInvocation invocation: expressions){
+						if(invocation.getExecutable().toString().equals("com.google.inject.Injector#getInstance(java.lang.Class)")){				
+							String bindClass = SaveMap.getClassValue(invocation.getExecutable().getType().toString());
+							List<String> params = SaveMap.getConstructorParameters(bindClass);
+							
+							//generate the snippetExpressionValue
+							String value = generateSnippetExpressionValue(bindClass);
+							
+							CtCodeSnippetExpression snippet = getFactory().Core().createCodeSnippetExpression();
+							snippet.setValue(value);
+							snippet.setParent(variable);			
+							
+							variable.setDefaultExpression(snippet);	
+						}
+					}		
 				}
-				writer.close();
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
 		}				
 	}
@@ -196,17 +177,44 @@ public class BindMethodProcessor2 extends AbstractManualProcessor{
 						List<CtVariableAccess> variables = statement.getElements(statementFilter2);
 						if(variables.size()== 2)	
 							if(!SaveMap.containsClass(variables.get(0).getType().toString())){
-								SaveMap.saveBinds(variables.get(0).getType().getSimpleName(), variables.get(1).getType().getSimpleName());								
+								SaveMap.saveBinds(variables.get(0).getType().toString(), variables.get(1).getType().toString());
 							}
 					}
 				}					
 			}	
-		}
-					
+		}					
 	}
 	
+	/**
+	 * Return true if the constructor is annotated with @java.lang.Override, false if is not
+	 * @param constructor
+	 * @return
+	 */
 	private Boolean isAnnotatedOverride(CtMethod<? extends Object> constructor) {
 		return !constructor.getAnnotations().isEmpty()
 	      && ANNOTATION_OVERRIDE.equals(constructor.getAnnotations().get(0).getSignature());
 	  }
+	
+	/**
+	 * Generate the SnippetExpressionValue
+	 * @param className
+	 * @return
+	 */
+	private String generateSnippetExpressionValue(String className){
+		String value =" new "+className+"(";			
+		
+		List<String> params = SaveMap.getConstructorParameters(className);
+		for(int i=0;i<params.size();i++){
+			String param =params.get(i);
+			if(SaveMap.containsClass(param))
+				param = SaveMap.getClassValue(param);
+			
+			if(i==0)
+				value =value+"new "+param+"()";
+			else
+				value =value+",new "+param+"()";
+		}
+		value = value+")";
+		return value;
+	}
 }
