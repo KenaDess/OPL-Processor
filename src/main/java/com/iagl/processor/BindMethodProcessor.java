@@ -2,132 +2,145 @@ package com.iagl.processor;
 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import spoon.processing.AbstractManualProcessor;
 import spoon.processing.AbstractProcessor;
 import spoon.reflect.code.CtBlock;
+import spoon.reflect.code.CtCodeSnippetExpression;
+import spoon.reflect.code.CtCodeSnippetStatement;
+import spoon.reflect.code.CtExpression;
 import spoon.reflect.code.CtInvocation;
+import spoon.reflect.code.CtLocalVariable;
 import spoon.reflect.code.CtStatement;
 import spoon.reflect.code.CtVariableAccess;
+import spoon.reflect.declaration.CtClass;
+import spoon.reflect.declaration.CtConstructor;
+import spoon.reflect.declaration.CtElement;
 import spoon.reflect.declaration.CtField;
 import spoon.reflect.declaration.CtMethod;
+import spoon.reflect.declaration.CtParameter;
+import spoon.reflect.declaration.CtVariable;
 import spoon.reflect.factory.Factory;
 import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.visitor.filter.TypeFilter;
 import spoon.support.reflect.code.CtFieldReadImpl;
 import util.SaveMap;
 
-public class BindMethodProcessor extends AbstractProcessor<CtMethod>{
+public class BindMethodProcessor2 extends AbstractManualProcessor{
 
+	public static final String ANNOTATION_OVERRIDE = "@java.lang.Override";
+	
 	@Override
-	public void process(CtMethod method) {	
+	public void process() {		
 		
-		HashMap<String, String> saveBind = new HashMap<String, String>();
+		List<CtMethod> methods = getFactory().Package().getRootPackage().getElements(new TypeFilter(CtMethod.class));
 		
-		//createInjector(method);
-		HashMap<String, String> saveBind2 = doGenerateBindMap(method, saveBind);		
-		getInstance(method, saveBind2);
+		PrintWriter writer;					
+		try {
+			writer = new PrintWriter("C:/Users/AnaGissel/Desktop/the-file-name.txt");
+			
+		// create BindMap
+		for (CtMethod method : methods){
+			doGenerateBindMap(method);	
+		}		
+		
+		//Get 
+		for (CtMethod method : methods){
+			getInstance(method);
+		}
+		
+		//create injector
+		for (CtMethod method : methods){
+			createInjector(method);
+		}
+		writer.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}	
 	
-	private void getInstance(CtMethod<?> method, HashMap<String, String> saveBind){
+	/**
+	 * Replace all getInstance invocations
+	 * @param method
+	 */
+	private void getInstance(CtMethod<?> method){
 				
 		CtBlock body = method.getBody();
 		String methodName = method.getSimpleName();
 		if(methodName.equals("main")){	
 			List<CtStatement> statements = body.getStatements();
+										
+			//statement instanceof CtInvocqtio inv.getExecutabe.getSignature().equals
 			
-			PrintWriter writer;					
-			try {
-				writer = new PrintWriter("C:/Users/AnaGissel/Desktop/the-file-name3.txt");
+			//Get all statements from the body
+			for(CtStatement statement:statements){	
+				Class<CtLocalVariable> filterClass = CtLocalVariable.class;
+				TypeFilter<CtLocalVariable> statementFilter = new TypeFilter<CtLocalVariable>(filterClass);
+				List<CtLocalVariable> variables = statement.getElements(statementFilter);
 				
-				//Verify Map values
-				if(saveBind ==null){
-					writer.println("MAP NULL ");
-				}
-				else{
-					writer.println("MAP: "+saveBind.size());
-				}
-				
-				for (String key: saveBind.keySet()) {
-					writer.println("key : " + key);
-					writer.println("valueMap : " + saveBind.get(key));
-				}
-				
-				//Get all statements from the body
-				for(CtStatement statement:statements){	
-					Class<CtInvocation> filterClass = CtInvocation.class;
-					TypeFilter<CtInvocation> statementFilter = new TypeFilter<CtInvocation>(filterClass);
-					List<CtInvocation> expressions = statement.getElements(statementFilter);
+				for(CtLocalVariable variable: variables){	
 					
+					Class<CtInvocation> filterClass2 = CtInvocation.class;
+					TypeFilter<CtInvocation> statementFilter2 = new TypeFilter<CtInvocation>(filterClass2);
+					List<CtInvocation> expressions = variable.getDefaultExpression().getElements(statementFilter2);
+											
 					for(CtInvocation invocation: expressions){
-						if(invocation.toString().contains(".getInstance(")){
-							writer.println("inv: "+invocation.toString());
-							//invoation.getArguments/Parameters
+						if(invocation.getExecutable().toString().equals("com.google.inject.Injector#getInstance(java.lang.Class)")){				
+							String bindClass = SaveMap.getClassValue(invocation.getExecutable().getType().toString());
+							List<String> params = SaveMap.getConstructorParameters(bindClass);
 							
-							Class<CtFieldReadImpl> filterClass2 = CtFieldReadImpl.class;
-							TypeFilter<CtFieldReadImpl> statementFilter2 = new TypeFilter<CtFieldReadImpl>(filterClass2);
-							List<CtFieldReadImpl> elements = statement.getElements(statementFilter2);
-							for(CtFieldReadImpl element : elements){
-								writer.println("type: "+element.getType());							    
-								writer.println("map: "+saveBind.get(element.getType().toString()));
-							}							
+							//generate the snippetExpressionValue
+							String value = generateSnippetExpressionValue(bindClass);
 							
-							//Replace invocation
-							CtTypeReference typeReference = elements.get(0).getType();
-							Factory factory = getFactory();
-
-							//LocalVariable = get/set default expression
-							factory.getEnvironment().setAutoImports(true);
-							CtField<?> field = factory.Core().createField();
-							field.setSimpleName("exemple");
-							field.setType(typeReference);
-							field.setParent(statement);							
+							CtCodeSnippetExpression snippet = getFactory().Core().createCodeSnippetExpression();
+							snippet.setValue(value);
+							snippet.setParent(variable);			
 							
+							variable.setDefaultExpression(snippet);	
 						}
-					}
+					}		
 				}
-				writer.close();
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
 		}				
 	}
 	
+	/**
+	 * Delete the createInjector object
+	 * @param method
+	 */
 	private void createInjector(CtMethod<?> method){
 		String methodName = method.getSimpleName();
 		
 		if(methodName.equals("main")){	
-			CtBlock body = method.getBody();
-			
-			Class<CtVariableAccess> filterClass2 = CtVariableAccess.class;
-			TypeFilter<CtVariableAccess> statementFilter = new TypeFilter<CtVariableAccess>(filterClass2);
-			List<CtVariableAccess> variables = body.getElements(statementFilter);			
-			List<CtStatement> statements = body.getStatements();
-			
-			Class<CtInvocation> filterClass = CtInvocation.class;
-			TypeFilter<CtInvocation> statementFilter2 = new TypeFilter<CtInvocation>(filterClass);
-			List<CtInvocation> expressions =body.getElements(statementFilter2);
+			List<CtStatement> statements = method.getBody().getStatements();
 			
 			/*PrintWriter writer;					
 			try {
 				writer = new PrintWriter("C:/Users/AnaGissel/Desktop/the-file-name2.txt");*/
 				for(CtStatement statement:statements){	
-					//writer.println("statement: "+statement.toString());
-				}
-				
-				for(CtVariableAccess variable: variables){					
-					if( variable.getType().toString().equals("com.google.inject.Injector"))
-					{	
-						//writer.println("variable: "+variable.toString());
-						//writer.println("type: "+variable.getType());
-					}
-				}
-				
-				for(CtInvocation invocation: expressions){						
-					if(invocation.toString().contains("Guice.createInjector(")){
-						//writer.println("field: "+invocation.toString());
+					
+					Class<CtLocalVariable> filterClass = CtLocalVariable.class;
+					TypeFilter<CtLocalVariable> statementFilter = new TypeFilter<CtLocalVariable>(filterClass);
+					List<CtLocalVariable> variables = statement.getElements(statementFilter);
+					
+					for(CtLocalVariable variable: variables){		
+						if( variable.getType().getQualifiedName().equals("com.google.inject.Injector"))
+						{		
+							//variable.setSimpleName("gissel");
+							
+							CtCodeSnippetStatement snippet = getFactory().Core().createCodeSnippetStatement();
+							snippet.setValue("//"+statement.toString());
+							snippet.setParent(variable);
+							//snippet.insertAfter(variable);
+							//REPLACE
+							//statement.replace(snippet);
+							//writer.println("snippet: "+snippet.toString());
+						}
 					}
 				}
 				
@@ -135,44 +148,73 @@ public class BindMethodProcessor extends AbstractProcessor<CtMethod>{
 			} catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			}	*/		
+			}		*/
 		}
 	}
 	
-	private HashMap<String, String> doGenerateBindMap(CtMethod<?> method,HashMap<String, String> saveBind){
+	/***
+	 * Creates the bindMap
+	 * @param method
+	 */
+	private void doGenerateBindMap(CtMethod<?> method){
 		
-		String methodName = method.getSimpleName();
-		
-		if(methodName.equals("configure")){		
-			CtBlock body = method.getBody();
-			List<CtStatement> statements = body.getStatements();
+		if(method.getSimpleName().equals("configure") && isAnnotatedOverride(method) 
+				&& method.getType().getQualifiedName().equals("void")){	
 			
-			PrintWriter writer;					
-			try {
-			writer = new PrintWriter("C:/Users/AnaGissel/Desktop/the-file-name.txt");
+			List<CtStatement> statements = method.getBody().getStatements();
+			
 			for(CtStatement statement:statements){				
-				
-				//statement instanceof CtInvocqtio inv.getExecutabe.getSignature().equals
-				if(statement.toString().contains("bind(") && statement.toString().contains(".to("))
-				{			
-					Class<CtVariableAccess> filterClass2 = CtVariableAccess.class;
-					TypeFilter<CtVariableAccess> statementFilter = new TypeFilter<CtVariableAccess>(filterClass2);
-					List<CtVariableAccess> variables = statement.getElements(statementFilter);
-					if(variables.size()== 2)	
-						if(!saveBind.containsKey(variables.get(0).getType().toString())){
-							saveBind.put(variables.get(0).getType().toString(), variables.get(1).getType().toString());
-							writer.println("bind: "+variables.get(0).getType().toString()+" to "+variables.get(1).getType().toString());
-							//writer.println("save: "+saveBind.get(variables.get(0).getType().toString()));
-						}
-				}						
-			}				
-				writer.close();
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		return saveBind;
+				//Get all invocations inside the method
+				Class<CtInvocation> filterClass = CtInvocation.class;
+				TypeFilter<CtInvocation> statementFilter = new TypeFilter<CtInvocation>(filterClass);
+				List<CtInvocation> invocations = statement.getElements(statementFilter);
+				for(CtInvocation invocation:invocations){
+					
+					if(invocation.getType().getQualifiedName().equals("com.google.inject.binder.ScopedBindingBuilder"))
+					{						
+						Class<CtVariableAccess> filterClass2 = CtVariableAccess.class;
+						TypeFilter<CtVariableAccess> statementFilter2 = new TypeFilter<CtVariableAccess>(filterClass2);
+						List<CtVariableAccess> variables = statement.getElements(statementFilter2);
+						if(variables.size()== 2)	
+							if(!SaveMap.containsClass(variables.get(0).getType().toString())){
+								SaveMap.saveBinds(variables.get(0).getType().toString(), variables.get(1).getType().toString());
+							}
+					}
+				}					
+			}	
+		}					
 	}
 	
+	/**
+	 * Return true if the constructor is annotated with @java.lang.Override, false if is not
+	 * @param constructor
+	 * @return
+	 */
+	private Boolean isAnnotatedOverride(CtMethod<? extends Object> constructor) {
+		return !constructor.getAnnotations().isEmpty()
+	      && ANNOTATION_OVERRIDE.equals(constructor.getAnnotations().get(0).getSignature());
+	  }
+	
+	/**
+	 * Generate the SnippetExpressionValue
+	 * @param className
+	 * @return
+	 */
+	private String generateSnippetExpressionValue(String className){
+		String value =" new "+className+"(";			
+		
+		List<String> params = SaveMap.getConstructorParameters(className);
+		for(int i=0;i<params.size();i++){
+			String param =params.get(i);
+			if(SaveMap.containsClass(param))
+				param = SaveMap.getClassValue(param);
+			
+			if(i==0)
+				value =value+"new "+param+"()";
+			else
+				value =value+",new "+param+"()";
+		}
+		value = value+")";
+		return value;
+	}
 }
