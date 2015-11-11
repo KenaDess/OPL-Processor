@@ -36,13 +36,9 @@ public class BindMethodProcessor extends AbstractManualProcessor{
 	
 	@Override
 	public void process() {		
-		
+		//Get all methods
 		List<CtMethod> methods = getFactory().Package().getRootPackage().getElements(new TypeFilter(CtMethod.class));
 		
-		PrintWriter writer;					
-		try {
-			writer = new PrintWriter("C:/Users/AnaGissel/Desktop/the-file-name.txt");
-			
 		// Phase 1: create BindMap
 		for (CtMethod method : methods){
 			doGenerateBindMap(method);	
@@ -56,11 +52,6 @@ public class BindMethodProcessor extends AbstractManualProcessor{
 		// Phase 3: Delete the createInjector object
 		for (CtMethod method : methods){
 			createInjector(method);
-		}
-		writer.close();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 	}	
 	
