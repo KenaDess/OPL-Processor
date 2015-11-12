@@ -60,7 +60,8 @@ public class SaveMap {
 	 * @return
 	 */
 	public static List<String> getConstructorParameters(String constructorName){
-		return constructorParamenters.get(constructorName);
+		List<String> params = constructorParamenters.get(constructorName);
+		return (params != null) ? params : new ArrayList<String>();
 	}	
 
   /**
