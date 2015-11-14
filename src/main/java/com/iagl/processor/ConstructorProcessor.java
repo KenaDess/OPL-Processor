@@ -3,11 +3,13 @@ package com.iagl.processor;
 import java.util.List;
 
 import spoon.processing.AbstractManualProcessor;
+import spoon.reflect.code.CtCodeSnippetExpression;
 import spoon.reflect.declaration.CtAnnotation;
 import spoon.reflect.declaration.CtConstructor;
 import spoon.reflect.declaration.CtElement;
 import spoon.reflect.declaration.CtField;
 import spoon.reflect.visitor.filter.TypeFilter;
+import util.SaveMap;
 
 public class ConstructorProcessor extends AbstractManualProcessor {
 
@@ -43,7 +45,27 @@ public class ConstructorProcessor extends AbstractManualProcessor {
     List<CtField> allFields = getFactory().Package().getRootPackage().getElements(new TypeFilter(CtField.class));
 
     for (CtField field : allFields) {
-      removeInjectAnnotation(field);
+      boolean annotedField = removeInjectAnnotation(field);
+
+      if (annotedField) {
+        String typeField = field.getType().getQualifiedName();
+        String newTypeField = "";
+
+        // On cherche une instance dans la map bind().toInstance()
+        if (SaveMap.containsClassToInstance(typeField)) {
+          newTypeField = SaveMap.getClassToInstance(typeField);
+          setFieldAssignement(field, newTypeField);
+        }
+        // Si aucune instance n'est trouvee, alors on cherche dans la map bind().to()
+        else if (SaveMap.containsClass(typeField)) {
+          newTypeField = SaveMap.getClassValue(typeField);
+          setFieldAssignement(field, "new " + newTypeField + "()");
+        }
+        // Sinon, on cree une nouvelle instance de typeField
+        else {
+          setFieldAssignement(field, "new " + typeField + "()");
+        }
+      }
     }
   }
 
@@ -52,12 +74,27 @@ public class ConstructorProcessor extends AbstractManualProcessor {
   /**
    * Remove the inject annotation on the element if exists, do nothing if not
    * @param element the CtElement to verify
+   * @return True if an Inject annotation is deleted, false if not
    */
-  private void removeInjectAnnotation(CtElement element) {
+  private boolean removeInjectAnnotation(CtElement element) {
     for (CtAnnotation annotation : element.getAnnotations()) {
-      if (ANNOTATION_INJECT.equals(annotation.getSignature()))
+      if (ANNOTATION_INJECT.equals(annotation.getSignature())) {
         element.removeAnnotation(annotation);
+        return true;
+      }
     }
+    return false;
   }
 
+  /**
+   * Set an assignment to the field
+   * @param field
+   * @param assignment
+   */
+  private void setFieldAssignement(CtField field, String assignment) {
+    CtCodeSnippetExpression snippet = getFactory().Core().createCodeSnippetExpression();
+    snippet.setValue(assignment);
+    snippet.setParent(field);
+    field.setDefaultExpression(snippet);
+  }
 }
