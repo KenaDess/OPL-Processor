@@ -11,7 +11,7 @@ public class SaveMap {
 	private static HashMap<String, String> bindsToInstanceMap = new HashMap<String, String>();
 	private static HashMap<String, List<String>> constructorParamenters = new HashMap<String, List<String>>();
 	private static HashMap<String, HashMap<String, String>> instancesMap = new HashMap<String, HashMap<String, String>>();
-	
+	private static HashMap<String, String> bindsMethods = new HashMap<String, String>();
 	/**
 	 * Save the className with it mapping value
 	 * @param className
@@ -38,6 +38,33 @@ public class SaveMap {
 	public static String getClassValue(String className){
 		return bindsMap.get(className);
 	}	
+	
+	/**
+	 * Save the methodName with it mapping value
+	 * @param className
+	 * @param value
+	 */
+	public static void saveMethod(String methodName, String className){
+		bindsMethods.put(methodName, className);
+	}
+	
+	/**
+	 * Returns true if the map contains the methodName, false if not.
+	 * @param className
+	 * @return
+	 */
+	public static boolean containsMethod(String methodName){
+		return bindsMethods.containsKey(methodName);
+	}
+	
+	/**
+	 * Return the mapping value for the methodName
+	 * @param className
+	 * @return
+	 */
+	public static String getMethodValue(String methodName){
+		return bindsMethods.get(methodName);
+	}
 	
 	/**
 	 * Save the className with its instance mapping value

@@ -78,7 +78,7 @@ public class ClassMapProcessor extends AbstractManualProcessor{
 							//writer.println("bindTo: "+bindTo );
 						}
 							
-						if(invocation.getType().getSimpleName().equals("void")){							
+						if(invocation.getType().getSimpleName().equals("void")){								 
 							if(invocation.getArguments().size()>0)
 								instance = invocation.getArguments().get(0).toString();						
 						}
@@ -90,6 +90,7 @@ public class ClassMapProcessor extends AbstractManualProcessor{
 					if(!instance.equals("")){
 						if(!SaveMap.containsClassToInstance(classTobind)){
 							SaveMap.saveBindsToInstance(classTobind, instance);
+							verifyInstance(instance);
 							//writer.println("BIND: "+classTobind +" TOINSTANCE: "+instance);
 						}
 					}
@@ -106,6 +107,16 @@ public class ClassMapProcessor extends AbstractManualProcessor{
 				}
 			}	
 		}					
+	}
+	
+	private void verifyInstance(String instance){
+		List<CtMethod> methods = getFactory().Package().getRootPackage().getElements(new TypeFilter(CtMethod.class));
+		
+		for(CtMethod method: methods){
+			if(method.getSimpleName().equals(instance)){
+				
+			}
+		}
 	}
 	
 	/**
