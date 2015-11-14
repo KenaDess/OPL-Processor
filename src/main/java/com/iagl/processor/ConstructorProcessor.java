@@ -5,6 +5,7 @@ import java.util.List;
 import spoon.processing.AbstractManualProcessor;
 import spoon.reflect.declaration.CtAnnotation;
 import spoon.reflect.declaration.CtConstructor;
+import spoon.reflect.declaration.CtElement;
 import spoon.reflect.visitor.filter.TypeFilter;
 
 public class ConstructorProcessor extends AbstractManualProcessor {
@@ -28,7 +29,7 @@ public class ConstructorProcessor extends AbstractManualProcessor {
     List<CtConstructor> allConstructors = getFactory().Package().getRootPackage().getElements(new TypeFilter(CtConstructor.class));
 
     for (CtConstructor constructor : allConstructors) {
-      Integer indexInjectAnnotation = getIndexAnnotatedInjectConstructor(constructor);
+      Integer indexInjectAnnotation = getIndexInjectAnnotation(constructor);
 
       // Si le constructeur est annote par @Inject, on supprime l'annotation
       if (indexInjectAnnotation != null) {
@@ -48,12 +49,12 @@ public class ConstructorProcessor extends AbstractManualProcessor {
   /* ************************************* UTILS **********************************/
 
   /**
-   * Returns true if the constructor have an @Inject annotation
-   * @param constructor the constructor to verify
-   * @return 
+   * Returns the index of the Inject annotation of the element
+   * @param element the element to verify
+   * @return the index of annotation if exist, null if not
    */
-  private Integer getIndexAnnotatedInjectConstructor(CtConstructor<? extends Object> constructor) {
-    List<CtAnnotation<?>> annotations = constructor.getAnnotations();
+  private Integer getIndexInjectAnnotation(CtElement element) {
+    List<CtAnnotation<?>> annotations = element.getAnnotations();
 
     if (!annotations.isEmpty()) {
       for (int index = 0; index < annotations.size(); index++) {
@@ -63,5 +64,5 @@ public class ConstructorProcessor extends AbstractManualProcessor {
     }
     return null;
   }
-
+  
 }
