@@ -1,11 +1,14 @@
 package com.iagl.processor;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.List;
 
 import spoon.processing.AbstractManualProcessor;
 import spoon.reflect.code.CtInvocation;
 import spoon.reflect.code.CtStatement;
 import spoon.reflect.code.CtVariableAccess;
+import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtMethod;
 import spoon.reflect.visitor.filter.TypeFilter;
 import util.SaveMap;
@@ -16,37 +19,34 @@ public class ClassMapProcessor extends AbstractManualProcessor{
 	
 	@Override
 	public void process() {	
-		/*PrintWriter writer;
+		PrintWriter writer;
 	    try {
 	      writer = new PrintWriter("C:/Users/AnaGissel/Desktop/bindInvocations.txt");
-	      */
+	      
 		//Get all methods
 		List<CtMethod> methods = getFactory().Package().getRootPackage().getElements(new TypeFilter(CtMethod.class));
 		
 		//create BindMap
 		for (CtMethod method : methods){
-			doGenerateBindMap(method);	
+			doGenerateBindMap(method,writer);	
 		}	
-		/*writer.close();
+		writer.close();
 	    } catch (FileNotFoundException e) {
 	      e.printStackTrace();
-	    }*/
+	    }
 	}
 	
 	/***
 	 * Creates the bindMap
 	 * @param method
 	 */
-	private void doGenerateBindMap(CtMethod<?> method){
-		
+	private void doGenerateBindMap(CtMethod<?> method,PrintWriter writer){		
 		if(method.getSimpleName().equals("configure") && isAnnotatedOverride(method) 
 				&& method.getType().getQualifiedName().equals("void")){	
 			
 			List<CtStatement> statements = method.getBody().getStatements();
 			
-			for(CtStatement statement:statements){		
-				//writer.println("------------- statement ----------- \n");
-				
+			for(CtStatement statement:statements){				
 				String classTobind="";
 				String bindTo="";
 				String instance = "";
@@ -55,29 +55,20 @@ public class ClassMapProcessor extends AbstractManualProcessor{
 				Class<CtInvocation> filterClass = CtInvocation.class;
 				TypeFilter<CtInvocation> statementFilter = new TypeFilter<CtInvocation>(filterClass);
 				List<CtInvocation> invocations = statement.getElements(statementFilter);
-				for(CtInvocation invocation:invocations){
-					//writer.println("invocation : "+invocation.toString());
-					//writer.println("inv type : "+invocation.getType().getSimpleName());					
+				for(CtInvocation invocation:invocations){					
 					
 					Class<CtVariableAccess> filterClass2 = CtVariableAccess.class;
 					TypeFilter<CtVariableAccess> statementFilter2 = new TypeFilter<CtVariableAccess>(filterClass2);
 					List<CtVariableAccess> variables = statement.getElements(statementFilter2);
 					
 					if(variables.size()>0){
-						if(invocation.getType().getSimpleName().equals("AnnotatedBindingBuilder")){
-							classTobind = variables.get(0).getType().toString();
-							//writer.println("classTobind: "+classTobind );
-						}
-							
-						if(invocation.getType().getSimpleName().equals("ScopedBindingBuilder")){
-							bindTo = variables.get(1).getType().toString();
-							//writer.println("bindTo: "+bindTo );
-						}
-							
-						if(invocation.getType().getSimpleName().equals("void")){								 
+						if(invocation.getType().getSimpleName().equals("AnnotatedBindingBuilder"))
+							classTobind = variables.get(0).getType().toString();													
+						if(invocation.getType().getSimpleName().equals("ScopedBindingBuilder"))
+							bindTo = variables.get(1).getType().toString();							
+						if(invocation.getType().getSimpleName().equals("void"))								 
 							if(invocation.getArguments().size()>0)
 								instance = invocation.getArguments().get(0).toString();						
-						}
 					}										
 				}		
 				
@@ -86,8 +77,8 @@ public class ClassMapProcessor extends AbstractManualProcessor{
 					if(!instance.equals("")){
 						if(!SaveMap.containsClassToInstance(classTobind)){
 							SaveMap.saveBindsToInstance(classTobind, instance);
-							verifyInstance(instance);
-							//writer.println("BIND: "+classTobind +" TOINSTANCE: "+instance);
+							if(verifyInstanceIsMethod(instance))
+								SaveMethodClassMap(instance);
 						}
 					}
 					else{
@@ -95,23 +86,45 @@ public class ClassMapProcessor extends AbstractManualProcessor{
 						if(bindTo.equals("") && instance.equals(""))
 							bindTo = classTobind;
 						//case: bind() or bind().to()
-						if(!SaveMap.containsClass(classTobind)){
-							SaveMap.saveBinds(classTobind, bindTo);	
-							//writer.println("BIND: "+classTobind +" TO: "+bindTo);
-						}
+						if(!SaveMap.containsClass(classTobind))
+							SaveMap.saveBinds(classTobind, bindTo);							
 					}					
 				}
 			}	
 		}					
 	}
 	
-	private void verifyInstance(String instance){
-		List<CtMethod> methods = getFactory().Package().getRootPackage().getElements(new TypeFilter(CtMethod.class));
+	/**
+	 * Verify if the instance is a method
+	 * @param instance
+	 */
+	private Boolean verifyInstanceIsMethod(String instance){
+		if(instance.contains("()"))
+			return true;
+		else return false;
 		
-		for(CtMethod method: methods){
-			if(method.getSimpleName().equals(instance)){
-				
-			}
+	}
+	
+	/**
+	 * Save the class on the MethodMap from the given method
+	 * @param instance
+	 */
+	private void SaveMethodClassMap(String methodInstance){	
+		if(methodInstance.contains(".")){
+			String[] s = methodInstance.split(".");
+			methodInstance = s[s.length-1];
+		}
+		
+		String methodName = methodInstance.replace("()", "");
+		List<CtClass> allClasses = getFactory().Package().getRootPackage().getElements(new TypeFilter(CtClass.class));
+		
+		for(CtClass cls: allClasses){			
+			List<CtMethod> methods = cls.getMethodsByName(methodName);
+			for(CtMethod method: methods){
+				if(method.getSimpleName().equals(methodName))
+					if(!SaveMap.containsMethod(methodName))
+						SaveMap.saveMethod(methodName, cls.getQualifiedName());				
+			}			
 		}
 	}
 	
