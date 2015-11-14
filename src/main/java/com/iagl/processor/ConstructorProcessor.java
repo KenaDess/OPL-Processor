@@ -25,7 +25,7 @@ public class ConstructorProcessor extends AbstractManualProcessor {
   public void process() {
     PrintWriter writer;
     try {
-      writer = new PrintWriter("C:/Users/Pauline/Desktop/bindmap-list.txt");
+      writer = new PrintWriter("C:/Users/AnaGissel/Desktop/bindmap-list2.txt");
       
     // On recupere la liste des contructeurs
     List<CtConstructor> constructors = getFactory().Package().getRootPackage().getElements(new TypeFilter(CtConstructor.class));
@@ -67,7 +67,7 @@ public class ConstructorProcessor extends AbstractManualProcessor {
     
     PrintWriter writer;
     try {
-      writer = new PrintWriter("C:/Users/Pauline/Desktop/bindmap-list.txt");
+      writer = new PrintWriter("C:/Users/AnaGissel/Desktop/bindmap-list.txt");
       
       CtParameter<?> ctParamToReplace = null;
       String nameParamToReplace = null;

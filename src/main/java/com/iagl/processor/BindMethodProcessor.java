@@ -1,5 +1,7 @@
 package com.iagl.processor;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +20,7 @@ import util.SaveMap;
 public class BindMethodProcessor extends AbstractManualProcessor{
 
 	@Override
-	public void process() {		
+	public void process() {		      
 		//Get all methods
 		List<CtMethod> methods = getFactory().Package().getRootPackage().getElements(new TypeFilter(CtMethod.class));
 				
@@ -41,6 +43,7 @@ public class BindMethodProcessor extends AbstractManualProcessor{
 		CtBlock body = method.getBody();
 		String methodName = method.getSimpleName();
 		if(methodName.equals("main")){	
+			String className = method.getParent().getSignature();
 			List<CtStatement> statements = body.getStatements();
 										
 			//statement instanceof CtInvocqtio inv.getExecutabe.getSignature().equals
@@ -59,11 +62,15 @@ public class BindMethodProcessor extends AbstractManualProcessor{
 											
 					for(CtInvocation invocation: expressions){
 						if(invocation.getExecutable().toString().equals("com.google.inject.Injector#getInstance(java.lang.Class)")){				
-							String bindClass = SaveMap.getClassValue(invocation.getExecutable().getType().toString());
-							List<String> params = SaveMap.getConstructorParameters(bindClass);
-							
+														
+							String classToBind = invocation.getExecutable().getType().toString();
+														
 							//generate the snippetExpressionValue
-							String value = generateSnippetExpressionValue(bindClass);
+							String value = generateSnippetExpressionValue(className,classToBind);
+							
+							if(!SaveMap.containsInstance(className, classToBind)){
+								SaveMap.saveInstance(className, classToBind, variable.getSimpleName());												
+							}
 							
 							CtCodeSnippetExpression snippet = getFactory().Core().createCodeSnippetExpression();
 							snippet.setValue(value);
@@ -117,19 +124,25 @@ public class BindMethodProcessor extends AbstractManualProcessor{
 	 * @param className
 	 * @return
 	 */
-	private String generateSnippetExpressionValue(String className){
-		String value =" new "+className+"(";			
+	private String generateSnippetExpressionValue(String className,String classToBind){		
+		String bindClass = SaveMap.getClassValue(classToBind);		
+		String value =" new "+bindClass+"(";	
+		List<String> params = SaveMap.getConstructorParameters(bindClass);
 		
-		List<String> params = SaveMap.getConstructorParameters(className);
-		for(int i=0;i<params.size();i++){
+		for(int i=0;i<params.size();i++){			
 			String param =params.get(i);
-			if(SaveMap.containsClass(param))
-				param = SaveMap.getClassValue(param);
+			if(SaveMap.containsClass(param)){
+				//if an instance exists
+				if(SaveMap.containsInstance(className, param))
+					param = SaveMap.getInstanceVariable(className, param);				
+				else
+					param = "new "+SaveMap.getClassValue(param)+"()";				
+			}		
 			
 			if(i==0)
-				value =value+"new "+param+"()";
+				value =value+param;
 			else
-				value =value+",new "+param+"()";
+				value =value+","+param;
 		}
 		value = value+")";
 		return value;
