@@ -10,6 +10,7 @@ import spoon.reflect.code.CtStatement;
 import spoon.reflect.code.CtVariableAccess;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtMethod;
+import spoon.reflect.declaration.ModifierKind;
 import spoon.reflect.visitor.filter.TypeFilter;
 import util.SaveMap;
 
@@ -71,14 +72,19 @@ public class ClassMapProcessor extends AbstractManualProcessor{
 								instance = invocation.getArguments().get(0).toString();						
 					}										
 				}		
+				writer.println("classTobind"+classTobind);
+				writer.println("bindTo"+bindTo);
+				writer.println("instance"+instance);
 				
 				if(!classTobind.equals("")){
 					//case: bind().toInstance()
 					if(!instance.equals("")){
 						if(!SaveMap.containsClassToInstance(classTobind)){
 							SaveMap.saveBindsToInstance(classTobind, instance);
+							writer.println("BIND: "+classTobind+" TOINSTANCE "+instance);
 							if(verifyInstanceIsMethod(instance))
 								SaveMethodClassMap(instance);
+							
 						}
 					}
 					else{
@@ -87,7 +93,10 @@ public class ClassMapProcessor extends AbstractManualProcessor{
 							bindTo = classTobind;
 						//case: bind() or bind().to()
 						if(!SaveMap.containsClass(classTobind))
-							SaveMap.saveBinds(classTobind, bindTo);							
+							{
+							SaveMap.saveBinds(classTobind, bindTo);	
+							writer.println("BIND: "+classTobind+" TO "+bindTo);
+							}
 					}					
 				}
 			}	
@@ -122,8 +131,9 @@ public class ClassMapProcessor extends AbstractManualProcessor{
 			List<CtMethod> methods = cls.getMethodsByName(methodName);
 			for(CtMethod method: methods){
 				if(method.getSimpleName().equals(methodName))
+					method.setVisibility(ModifierKind.PUBLIC);
 					if(!SaveMap.containsMethod(methodName))
-						SaveMap.saveMethod(methodName, cls.getQualifiedName());				
+						SaveMap.saveMethod(methodInstance, cls.getQualifiedName());				
 			}			
 		}
 	}
