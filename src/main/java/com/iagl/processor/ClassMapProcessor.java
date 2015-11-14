@@ -1,16 +1,12 @@
 package com.iagl.processor;
 
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
 import java.util.List;
 
 import spoon.processing.AbstractManualProcessor;
-import spoon.reflect.code.CtAbstractInvocation;
 import spoon.reflect.code.CtInvocation;
 import spoon.reflect.code.CtStatement;
 import spoon.reflect.code.CtVariableAccess;
 import spoon.reflect.declaration.CtMethod;
-import spoon.reflect.reference.CtParameterReference;
 import spoon.reflect.visitor.filter.TypeFilter;
 import util.SaveMap;
 
