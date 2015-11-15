@@ -53,8 +53,27 @@ public class ConstructorProcessor extends AbstractManualProcessor {
 
         // On cherche une instance dans la map bind().toInstance()
         if (SaveMap.containsClassToInstance(typeField)) {
-          newTypeField = SaveMap.getClassToInstance(typeField);
-          setFieldAssignement(field, newTypeField);
+
+          String className = field.getParent().getSignature(); // nom de la classe
+          newTypeField = SaveMap.getClassToInstance(typeField); // la nouvelle assignation
+
+          if (newTypeField.contains("()")) { // c'est une methode
+            if (SaveMap.containsMethod(newTypeField)) {
+              String methodClass = SaveMap.getMethodValue(newTypeField);
+
+              // une instance de ce type existe deja
+              if (SaveMap.containsInstance(className, methodClass))
+                setFieldAssignement(field, SaveMap.getInstanceVariable(className, methodClass) + "." + newTypeField);
+              else {
+                // sinon on cree l'objet
+                setFieldAssignement(field, "(new " + methodClass + "())." + newTypeField);
+              }
+            } else {
+              setFieldAssignement(field, "new " + newTypeField + "()");
+            }
+          } else { // ce n'est pas une methode
+            setFieldAssignement(field, newTypeField);
+          }
         }
         // Si aucune instance n'est trouvee, alors on cherche dans la map bind().to()
         else if (SaveMap.containsClass(typeField)) {
