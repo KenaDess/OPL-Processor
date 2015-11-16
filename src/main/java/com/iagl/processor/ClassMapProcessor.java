@@ -62,9 +62,7 @@ public class ClassMapProcessor extends AbstractManualProcessor {
   
   private void saveProvidesMethod(CtMethod<?> method,CtClass<?> className){
 	  String returnType = method.getSignature().replace(method.getSimpleName()+"()", "").replace(" ", "");
-	  if(!SaveMap.containsProviderMethod(returnType)){
-		  SaveMap.saveProvidesMethod(returnType, className.getQualifiedName(), method.getSimpleName());
-	  }
+	  SaveMap.saveProvidesMethod(returnType, className.getQualifiedName(), method.getSimpleName());	  
   }
   
   /***
