@@ -9,9 +9,11 @@ public class SaveMap {
 	
 	private static HashMap<String, String> bindsMap = new HashMap<String, String>();
 	private static HashMap<String, String> bindsToInstanceMap = new HashMap<String, String>();
-	private static HashMap<String, List<String>> constructorParamenters = new HashMap<String, List<String>>();
+	private static HashMap<String, List<String>> constructorParamentersMap = new HashMap<String, List<String>>();
 	private static HashMap<String, HashMap<String, String>> instancesMap = new HashMap<String, HashMap<String, String>>();
-	private static HashMap<String, String> bindsMethods = new HashMap<String, String>();
+	private static HashMap<String, String> bindsMethodsMap = new HashMap<String, String>();
+	private static HashMap<String, List<String>> providerMethodsMap = new HashMap<String, List<String>>();
+	
 	/**
 	 * Save the className with it mapping value
 	 * @param className
@@ -45,7 +47,7 @@ public class SaveMap {
 	 * @param value
 	 */
 	public static void saveMethod(String methodName, String className){
-		bindsMethods.put(methodName, className);
+		bindsMethodsMap.put(methodName, className);
 	}
 	
 	/**
@@ -54,7 +56,7 @@ public class SaveMap {
 	 * @return
 	 */
 	public static boolean containsMethod(String methodName){
-		return bindsMethods.containsKey(methodName);
+		return bindsMethodsMap.containsKey(methodName);
 	}
 	
 	/**
@@ -63,7 +65,7 @@ public class SaveMap {
 	 * @return
 	 */
 	public static String getMethodValue(String methodName){
-		return bindsMethods.get(methodName);
+		return bindsMethodsMap.get(methodName);
 	}
 	
 	/**
@@ -99,7 +101,7 @@ public class SaveMap {
 	 * @param parameters
 	 */
 	public static void saveConstructorParameters(String constructorName, List<String> parameters){
-		constructorParamenters.put(constructorName, parameters);
+		constructorParamentersMap.put(constructorName, parameters);
 	}
 	
 	/**
@@ -108,7 +110,7 @@ public class SaveMap {
 	 * @return
 	 */
 	public static boolean containsConstructor(String constructorName){
-		return constructorParamenters.containsKey(constructorName);
+		return constructorParamentersMap.containsKey(constructorName);
 	}
 	
 	/**
@@ -117,10 +119,44 @@ public class SaveMap {
 	 * @return
 	 */
 	public static List<String> getConstructorParameters(String constructorName){
-		List<String> params = constructorParamenters.get(constructorName);
+		List<String> params = constructorParamentersMap.get(constructorName);
 		return (params != null) ? params : new ArrayList<String>();
 	}	
 
+	/**
+	 * Save the methodName with its className and returnType
+	 * @param returnType
+	 * @param className
+	 * @param methodName
+	 */
+	public static void saveProvidesMethod(String returnType, String className, String methodName){
+		List<String> list = new ArrayList<String>();
+		list.add(className);
+		list.add(methodName);
+		providerMethodsMap.put(returnType, list);
+	}
+	
+	/**
+	 * Returns true if a method of returnType is already mapped , false if is not.
+	 * @param returnType
+	 * @return
+	 */
+	public static boolean containsProviderMethod(String returnType){
+		if(providerMethodsMap.containsKey(returnType))
+			return true;
+		else
+			return false;
+	}
+	
+	/**
+	 * Returns the methodName and className for the given returnType
+	 * @param returnType
+	 * @return
+	 */
+	public static List<String> getProviderMethod(String returnType){
+		return providerMethodsMap.get(returnType);
+	}
+	
 	/**
 	 * Save variableName from the given ClassInstance inside the ClassName 
 	 * @param className

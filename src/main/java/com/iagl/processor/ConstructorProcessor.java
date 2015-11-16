@@ -14,6 +14,7 @@ import util.SaveMap;
 public class ConstructorProcessor extends AbstractManualProcessor {
 
   public static final String ANNOTATION_INJECT = "@javax.inject.Inject";
+  public static final String ANNOTATION_INJECT_GUICE = "@com.google.inject.Inject";
 
   @Override
   public void process() {
@@ -97,7 +98,8 @@ public class ConstructorProcessor extends AbstractManualProcessor {
    */
   private boolean removeInjectAnnotation(CtElement element) {
     for (CtAnnotation annotation : element.getAnnotations()) {
-      if (ANNOTATION_INJECT.equals(annotation.getSignature())) {
+      if (ANNOTATION_INJECT.equals(annotation.getSignature()) ||
+    		  ANNOTATION_INJECT_GUICE.equals(annotation.getSignature())) {
         element.removeAnnotation(annotation);
         return true;
       }

@@ -1,5 +1,7 @@
 package com.iagl.processor;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.List;
 import spoon.processing.AbstractManualProcessor;
 import spoon.reflect.code.CtBlock;
@@ -15,7 +17,8 @@ import util.SaveMap;
 public class BindMethodProcessor extends AbstractManualProcessor{
 
 	@Override
-	public void process() {			      
+	public void process() {	
+			      
 		//Get all methods
 		List<CtMethod> methods = getFactory().Package().getRootPackage().getElements(new TypeFilter(CtMethod.class));
 				
@@ -117,7 +120,7 @@ public class BindMethodProcessor extends AbstractManualProcessor{
 	private String generateSnippetExpressionValue(String className,String classToBind){		
 		//bind().toInstance()
 		if(SaveMap.containsClassToInstance(classToBind))
-			return generateBindToInstance(className,classToBind);		
+			return generateBindToInstance(className,classToBind);
 		else
 			//bind() or bind.to()
 			return generateBindTo(className,classToBind);			
@@ -130,31 +133,66 @@ public class BindMethodProcessor extends AbstractManualProcessor{
 	 * @return
 	 */
 	private String generateBindTo(String className,String classToBind){
-		String bindClass = SaveMap.getClassValue(classToBind);		
-		String value =" new "+bindClass+"(";	
+		String bindClass = SaveMap.getClassValue(classToBind);	
+		if(bindClass==null)
+			bindClass = classToBind;
+		String value ="";
+				
+		if(SaveMap.containsProviderMethod(bindClass)){
+			List<String> details = SaveMap.getProviderMethod(bindClass);
+			String methodClass = details.get(0);
+			String method = details.get(1);
+			
+			//if an instance exists
+			if(SaveMap.containsInstance(className, methodClass)){
+				return SaveMap.getInstanceVariable(className, methodClass)+"."+method+"()";
+			}
+			else{
+				value = "(new "+methodClass+"(";
+				//get all the parameters from the constructor's class 
+				List<String> params = SaveMap.getConstructorParameters(bindClass);
+				for(int i=0;i<params.size();i++){
+					String param =params.get(i);
+					
+					param = generateBindTo(className,param); 
+					
+					if(i==0)
+						value =value+param;
+					else
+						value =value+","+param;
+				}				
+				
+				return value = value+"))."+method+"()";			
+			}
+		}		
+		else if(SaveMap.containsClass(bindClass) || SaveMap.containsClassToInstance(bindClass)){
+			//if an instance exists
+			if(SaveMap.containsInstance(className, bindClass)){
+				return SaveMap.getInstanceVariable(className, bindClass);
+			}
+			else 
+				value =" new "+bindClass+"(";			
+		}
+		else
+			value =" new "+bindClass+"(";	
+		
 		//get all the parameters from the constructor's class 
 		List<String> params = SaveMap.getConstructorParameters(bindClass);
-		
-		for(int i=0;i<params.size();i++){			
+		for(int i=0;i<params.size();i++){
 			String param =params.get(i);
-			//verify if the class is binded
-			if(SaveMap.containsClass(param) || SaveMap.containsClassToInstance(param)){
-				//if an instance exists
-				if(SaveMap.containsInstance(className, param)){
-					param = SaveMap.getInstanceVariable(className, param);
-				}
-				else
-					param = "new "+SaveMap.getClassValue(param)+"()";				
-			}		
+			
+			param = generateBindTo(className,param); 
 			
 			if(i==0)
 				value =value+param;
 			else
 				value =value+","+param;
-		}
+		}				
+		
 		value = value+")";
 		return value;
-	}
+	}	
+	
 	
 	/**
 	 * Generate the code for a  BindToInstance()
